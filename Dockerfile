@@ -1,23 +1,30 @@
-# Step 1: Use official Node.js image as base
-FROM node:16 AS build
+# Use Node.js image to build the app
+FROM node:16 as build
 
-# Step 2: Set working directory
-WORKDIR /usr/src/app
+# Set working directory
+WORKDIR /app
 
-# Step 3: Copy package.json and package-lock.json files
-COPY package*.json ./
-
-# Step 4: Install dependencies
+# Copy package.json and install dependencies
+COPY package.json package-lock.json ./
 RUN npm install
 
-# Step 5: Copy the rest of the application files
+# Copy the rest of the application code
 COPY . .
 
-# Step 6: Build the application (if needed, e.g., for React frontend or any build step)
-# RUN npm run build (Uncomment if your app has a build step)
+# Build the React app for production
+RUN npm run build
 
-# Step 7: Expose the port that the app will run on
-EXPOSE 3000
+# Use nginx to serve the build
+FROM nginx:stable-alpine
 
-# Step 8: Command to run the app (change accordingly if you have a different entry point)
-CMD [ "npm", "start" ]
+# Copy build output to nginx html directory
+COPY --from=build /app/build /usr/share/nginx/html
+
+# Copy custom nginx config (optional)
+# COPY nginx.conf /etc/nginx/nginx.conf
+
+# Expose port 80
+EXPOSE 80
+
+# Start nginx server
+CMD ["nginx", "-g", "daemon off;"]
